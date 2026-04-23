@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BI Reporter — Business Intelligence Automation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#060810;--surface:#0c101a;--card:#111827;--card2:#1a2236;
+  --border:#1e2d45;--border2:#2d4060;
+  --accent:#00e5ff;--accent2:#7c5cfc;--accent3:#ff5c8a;
+  --green:#00e096;--yellow:#ffd166;--red:#ff5c8a;
+  --text:#e8eaf0;--muted:#64748b;--muted2:#94a3b8;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 50% at 20% -10%,rgba(124,92,252,.08) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 110%,rgba(0,229,255,.06) 0%,transparent 60%);
+}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* ── HEADER ── */
+header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;height:60px;border-bottom:1px solid var(--border);
+  background:rgba(6,8,16,.9);backdrop-filter:blur(16px);
+  position:sticky;top:0;z-index:100;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:34px;height:34px;border-radius:9px;
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  display:grid;place-items:center;font-size:17px;
+}
+.logo-name{font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:-.02em}
+.logo-tag{
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;
+  background:var(--accent2)20;color:var(--accent2);border:1px solid var(--accent2)30;
+  border-radius:20px;padding:2px 9px;
+}
+.header-right{display:flex;gap:10px;align-items:center}
+.btn{
+  font-family:var(--mono);font-size:11px;padding:8px 16px;border-radius:8px;
+  border:1px solid var(--border2);background:var(--card);color:var(--muted2);
+  cursor:pointer;transition:all .15s;letter-spacing:.02em;
+}
+.btn:hover{background:var(--card2);color:var(--text)}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent2),var(--accent));
+  color:#080c18;border:none;font-weight:700;
+}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 4px 20px var(--accent)30}
+.btn-download{
+  background:var(--green)15;border:1px solid var(--green)40;color:var(--green);
+}
+.btn-download:hover{background:var(--green)25}
+
+/* ── SCREENS ── */
+.screen{display:none;position:relative;z-index:1}
+.screen.active{display:block}
+
+/* ── UPLOAD ── */
+.upload-page{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 60px);padding:40px 24px;gap:44px;
+}
+.hero{text-align:center;max-width:600px}
+.hero-eyebrow{
+  font-family:var(--mono);font-size:11px;letter-spacing:.15em;color:var(--accent);
+  text-transform:uppercase;margin-bottom:16px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';flex:0 0 40px;height:1px;background:var(--accent)40}
+.hero h1{
+  font-size:clamp(34px,5vw,60px);font-weight:700;letter-spacing:-.04em;line-height:1.08;
+  background:linear-gradient(135deg,var(--text) 40%,var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:14px;
+}
+.hero p{color:var(--muted2);font-size:15px;font-weight:300;line-height:1.7}
+
+.drop-zone{
+  width:100%;max-width:560px;border:1px dashed var(--border2);border-radius:18px;
+  padding:52px 40px;text-align:center;cursor:pointer;
+  background:var(--card);transition:all .2s;position:relative;overflow:hidden;
+}
+.drop-zone::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 0%,var(--accent2)08,transparent 70%);
+  pointer-events:none;
+}
+.drop-zone:hover,.drop-zone.over{
+  border-color:var(--accent2);box-shadow:0 0 50px var(--accent2)15;
+}
+.drop-icon{font-size:48px;margin-bottom:18px;display:block}
+.drop-zone h2{font-size:17px;font-weight:600;margin-bottom:6px}
+.drop-zone p{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+.drop-zone input{display:none}
+
+.supported{
+  display:flex;gap:8px;justify-content:center;margin-top:16px;
+}
+.fmt-badge{
+  font-family:var(--mono);font-size:10px;padding:3px 10px;border-radius:5px;
+  background:var(--card2);border:1px solid var(--border);color:var(--muted2);
+}
+
+.divider{
+  display:flex;align-items:center;gap:14px;
+  width:100%;max-width:560px;
+  font-family:var(--mono);font-size:11px;color:var(--muted);
+}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+.pill-features{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:12px;
+  width:100%;max-width:560px;
+}
+.pill{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:16px 14px;text-align:center;
+}
+.pill .picon{font-size:22px;margin-bottom:6px}
+.pill p{font-family:var(--mono);font-size:10px;color:var(--muted);line-height:1.6}
+
+/* ── LOADING ── */
+.loading-page{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 60px);gap:32px;
+}
+.ring{position:relative;width:130px;height:130px}
+.ring svg{position:absolute;inset:0}
+.ring-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.ring-pct{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--accent)}
+.ring-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em}
+.load-title{font-size:18px;font-weight:600;text-align:center;margin-bottom:6px}
+.load-stage{font-family:var(--mono);font-size:12px;color:var(--muted2);text-align:center}
+.prog-bar{width:320px;height:3px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent2),var(--accent));border-radius:2px;transition:width .5s ease}
+
+/* ── DASHBOARD ── */
+.dash{max-width:1360px;margin:0 auto;padding:28px 24px}
+.dash-top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:26px;flex-wrap:wrap;gap:14px}
+.dash-title h2{font-size:22px;font-weight:700;letter-spacing:-.03em}
+.dash-title p{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:4px}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px}
+.kpi{
+  background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;position:relative;overflow:hidden;
+}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:2px;height:100%;background:var(--kpi-color,var(--accent))}
+.kpi-lbl{font-family:var(--mono);font-size:9px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.kpi-val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--kpi-color,var(--accent));line-height:1}
+.kpi-sub{font-family:var(--mono);font-size:9px;color:var(--muted);margin-top:5px}
+
+/* Grid */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr}}
+
+/* Panel */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:16px}
+.ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.pt{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+.pb{font-family:var(--mono);font-size:9px;background:var(--accent)15;color:var(--accent);border-radius:4px;padding:2px 8px}
+.chart-wrap{position:relative;height:240px}
+
+/* Log */
+.log-list{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto}
+.log-item{display:flex;align-items:flex-start;gap:10px;font-family:var(--mono);font-size:11px}
+.log-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:4px}
+.log-msg{color:var(--muted2);line-height:1.5}
+
+/* ML */
+.ml-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 14px;background:var(--surface);border-radius:8px;
+  margin-bottom:6px;border:1px solid var(--border);
+}
+.ml-name{font-family:var(--mono);font-size:11px;color:var(--text)}
+.ml-val{font-family:var(--mono);font-size:12px;font-weight:600}
+.fi-item{margin-bottom:9px}
+.fi-lbl{font-family:var(--mono);font-size:10px;color:var(--muted2);display:flex;justify-content:space-between;margin-bottom:3px}
+.fi-bg{background:var(--border);border-radius:2px;height:5px;overflow:hidden}
+.fi-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent2),var(--accent));transition:width .8s ease}
+
+/* Table */
+.tbl-wrap{overflow-x:auto;max-height:320px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px}
+thead th{
+  position:sticky;top:0;background:var(--surface);
+  text-align:left;padding:9px 12px;color:var(--accent);
+  border-bottom:1px solid var(--border);white-space:nowrap;
+  font-weight:500;font-size:10px;letter-spacing:.04em;
+}
+tbody td{padding:7px 12px;color:var(--muted2);border-bottom:1px solid var(--border)18;white-space:nowrap}
+tbody tr:hover{background:var(--card2)}
+
+/* Pagination */
+.pgn{display:flex;justify-content:space-between;align-items:center;margin-top:14px}
+.pgn-info{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pgn-btns{display:flex;gap:6px}
+
+/* Power BI tip */
+.pbi-box{
+  background:linear-gradient(135deg,var(--accent2)10,var(--accent)08);
+  border:1px solid var(--accent2)30;border-radius:12px;padding:22px;
+  display:flex;gap:18px;align-items:flex-start;
+}
+.pbi-icon{font-size:32px;flex-shrink:0}
+.pbi-title{font-size:14px;font-weight:600;color:var(--accent2);margin-bottom:6px}
+.pbi-steps{font-family:var(--mono);font-size:11px;color:var(--muted2);line-height:2}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.screen.active{animation:fadeUp .4s ease}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📊</div>
+    <span class="logo-name">BI Reporter</span>
+    <span class="logo-tag">AUTO</span>
+  </div>
+  <div class="header-right" id="headerRight"></div>
+</header>
+
+<!-- ── UPLOAD ── -->
+<div class="screen active" id="sUpload">
+  <div class="upload-page">
+    <div class="hero">
+      <div class="hero-eyebrow">Business Intelligence Automation</div>
+      <h1>Turn Raw Data Into<br/>Professional Reports</h1>
+      <p>Upload any CSV or Excel file — get a fully formatted Excel report with KPIs, charts, ML predictions, and Power BI integration. Instantly.</p>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <span class="drop-icon">📁</span>
+      <h2>Drop your file here</h2>
+      <p>CSV, XLSX, XLS · Up to 200MB · 100K+ rows</p>
+      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls"/>
+      <div class="supported">
+        <span class="fmt-badge">CSV</span>
+        <span class="fmt-badge">XLSX</span>
+        <span class="fmt-badge">XLS</span>
+      </div>
+    </div>
+
+    <div class="divider"><span>or try demo</span></div>
+
+    <button class="btn btn-primary" onclick="loadDemo()" style="padding:13px 40px;font-size:13px">
+      ⚡ &nbsp;Generate Demo Report
+    </button>
+
+    <div class="pill-features">
+      <div class="pill"><div class="picon">🧹</div><p>Auto clean<br/>& impute</p></div>
+      <div class="pill"><div class="picon">📊</div><p>Excel report<br/>with charts</p></div>
+      <div class="pill"><div class="picon">🤖</div><p>ML revenue<br/>prediction</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── LOADING ── -->
+<div class="screen" id="sLoading">
+  <div class="loading-page">
+    <div class="ring">
+      <svg viewBox="0 0 130 130" width="130" height="130">
+        <circle cx="65" cy="65" r="56" fill="none" stroke="#1e2d45" stroke-width="6"/>
+        <circle id="ringCircle" cx="65" cy="65" r="56" fill="none"
+          stroke="url(#rg)" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="0 352"
+          style="transform:rotate(-90deg);transform-origin:65px 65px;transition:stroke-dasharray .6s ease"/>
+        <defs>
+          <linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#7c5cfc"/>
+            <stop offset="100%" stop-color="#00e5ff"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="ring-center">
+        <span class="ring-pct" id="ringPct">0%</span>
+        <span class="ring-lbl">PROGRESS</span>
+      </div>
+    </div>
+    <div>
+      <div class="load-title">Generating BI Report</div>
+      <div class="load-stage" id="loadStage">Initializing pipeline...</div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+    <div id="liveLog" style="font-family:var(--mono);font-size:11px;color:var(--muted);text-align:center;min-height:16px"></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div class="screen" id="sDash">
+  <div class="dash">
+
+    <div class="dash-top">
+      <div class="dash-title">
+        <h2>BI Dashboard</h2>
+        <p id="dashSub">—</p>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><span class="pt">📊 Revenue by Category</span></div>
+        <div class="chart-wrap"><canvas id="catChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="pt">⚙ Pipeline Log</span><span class="pb" id="logBadge">—</span></div>
+        <div class="log-list" id="logList"></div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="panel">
+        <div class="ph"><span class="pt">🤖 ML Prediction</span><span id="mlBadge" style="font-family:var(--mono);font-size:10px;color:var(--green)"></span></div>
+        <div id="mlContent"></div>
+      </div>
+      <div class="panel">
+        <div class="ph"><span class="pt">📐 Column Statistics</span></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Column</th><th>Min</th><th>Max</th><th>Mean</th><th>Sum</th></tr></thead>
+            <tbody id="statsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Power BI tip -->
+    <div class="pbi-box" style="margin-bottom:16px">
+      <div class="pbi-icon">⚡</div>
+      <div>
+        <div class="pbi-title">Connect to Power BI in 3 steps</div>
+        <div class="pbi-steps">
+          1. Download the Excel report below<br/>
+          2. Open Power BI Desktop → Get Data → Excel Workbook → Select file<br/>
+          3. Choose "🗃 Cleaned Data" sheet → Load → Build your dashboard!
+        </div>
+      </div>
+    </div>
+
+    <!-- Data preview -->
+    <div class="panel">
+      <div class="ph">
+        <span class="pt">🗃 Cleaned Data Preview</span>
+        <span class="pb" id="previewBadge">—</span>
+      </div>
+      <div class="tbl-wrap" id="previewWrap"></div>
+      <div class="pgn">
+        <span class="pgn-info" id="pgnInfo">—</span>
+        <div class="pgn-btns">
+          <button class="btn" onclick="changePage(-1)">◀</button>
+          <button class="btn" onclick="changePage(1)">▶</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let DATA = null, JOB_ID = null;
+let page = 0; const PER = 12;
+let charts = {};
+
+/* ── Upload ── */
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fileInput');
+dz.addEventListener('click', () => fi.click());
+fi.addEventListener('change', e => e.target.files[0] && upload(e.target.files[0]));
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); e.dataTransfer.files[0] && upload(e.dataTransfer.files[0]); });
+
+async function upload(file) {
+  show('sLoading'); startProgress();
+  const fd = new FormData(); fd.append('file', file);
+  try {
+    const r = await fetch('/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || 'Upload failed');
+    JOB_ID = j.job_id;
+    const res = await fetch(`/results/${JOB_ID}`).then(r => r.json());
+    finishLoading(res);
+  } catch(e) {
+    alert('Error: ' + e.message);
+    show('sUpload');
+  }
+}
+
+function loadDemo() {
+  const csv = `Product,Category,Revenue,Cost,Units,Region,Month
+Laptop Pro,Electronics,850000,550000,100,North,Jan
+Wireless Mouse,Accessories,36000,18000,300,South,Jan
+Monitor 4K,Electronics,640000,420000,200,East,Jan
+Keyboard RGB,Accessories,70000,42000,200,West,Jan
+SSD 1TB,Storage,150000,90000,200,North,Feb
+Laptop Pro,Electronics,920000,590000,110,South,Feb
+Graphics Card,Electronics,900000,580000,200,East,Feb
+Headphones,Audio,160000,96000,200,West,Feb
+Tablet,Electronics,560000,360000,200,North,Mar
+Smartphone,Electronics,660000,420000,300,South,Mar
+Router WiFi,Networking,64000,38000,200,East,Mar
+Webcam HD,Electronics,90000,54000,200,West,Mar
+Laptop Pro,Electronics,980000,630000,115,North,Apr
+SSD 1TB,Storage,180000,108000,240,South,Apr
+Monitor 4K,Electronics,700000,460000,220,East,Apr
+Headphones,Audio,176000,104000,220,West,Apr`;
+  const blob = new Blob([csv], { type: 'text/csv' });
+  upload(new File([blob], 'demo_business.csv', { type: 'text/csv' }));
+}
+
+/* ── Progress ── */
+const STAGES = [
+  [10,'Reading & detecting file format...'],
+  [25,'Cleaning missing values & duplicates...'],
+  [42,'Removing outliers (IQR method)...'],
+  [58,'Engineering features (Profit, Margins)...'],
+  [72,'Training ML prediction model...'],
+  [85,'Generating Excel report with charts...'],
+  [95,'Saving to disk & finalizing...'],
+];
+let pIdx = 0, pTimer = null;
+
+function startProgress() {
+  pIdx = 0; setP(0, STAGES[0][1]);
+  pTimer = setInterval(() => {
+    pIdx = Math.min(pIdx+1, STAGES.length-1);
+    setP(STAGES[pIdx][0], STAGES[pIdx][1]);
+  }, 900);
+}
+
+function setP(pct, msg) {
+  document.getElementById('ringPct').textContent = pct + '%';
+  document.getElementById('progFill').style.width = pct + '%';
+  document.getElementById('loadStage').textContent = msg;
+  document.getElementById('liveLog').textContent = msg;
+  const c = 2 * Math.PI * 56;
+  document.getElementById('ringCircle').setAttribute('stroke-dasharray', `${pct/100*c} ${c}`);
+}
+
+function finishLoading(res) {
+  clearInterval(pTimer);
+  setP(100, 'Report generated ✓');
+  DATA = res;
+  setTimeout(() => buildDash(), 500);
+}
+
+/* ── Screens ── */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ── Dashboard ── */
+function buildDash() {
+  document.getElementById('headerRight').innerHTML = `
+    <button class="btn" onclick="show('sUpload')">← New File</button>
+    <button class="btn btn-download" onclick="window.location='/download/${JOB_ID}'">↓ Download Excel Report</button>
+  `;
+  document.getElementById('dashSub').textContent =
+    `${DATA.clean_shape[0].toLocaleString()} rows × ${DATA.clean_shape[1]} cols · Excel report ready`;
+
+  buildKPIs();
+  buildLog();
+  buildCatChart();
+  buildML();
+  buildStats();
+  buildPreview();
+  show('sDash');
+}
+
+function buildKPIs() {
+  const det = DATA.detected || {};
+  const kpis = [
+    { label:'Clean Records', val: DATA.clean_shape[0].toLocaleString(), sub:`raw: ${DATA.original_shape[0].toLocaleString()}`, color:'var(--accent)' },
+    { label:'Columns', val: DATA.clean_shape[1], sub:'after engineering', color:'var(--accent2)' },
+  ];
+  const st = DATA.stats || {};
+  if (det.revenue && st[det.revenue]) {
+    kpis.push({ label:'Total Revenue', val: fmt(st[det.revenue].sum), sub:`avg: ${fmt(st[det.revenue].mean)}`, color:'var(--green)' });
+  }
+  if (st['Profit']) {
+    kpis.push({ label:'Total Profit', val: fmt(st['Profit'].sum), sub:`avg: ${fmt(st['Profit'].mean)}`, color:'var(--green)' });
+  }
+  if (st['Profit_Margin_%']) {
+    kpis.push({ label:'Avg Margin', val: st['Profit_Margin_%'].mean + '%', sub:'profit margin', color:'var(--yellow)' });
+  }
+  if (DATA.ml && DATA.ml.r2 !== undefined) {
+    kpis.push({ label:'ML R² Score', val: DATA.ml.r2, sub:'prediction accuracy', color:'var(--accent2)' });
+  }
+  document.getElementById('kpiRow').innerHTML = kpis.map(k => `
+    <div class="kpi" style="--kpi-color:${k.color}">
+      <div class="kpi-lbl">${k.label}</div>
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+function buildLog() {
+  const logs = DATA.logs || [];
+  document.getElementById('logBadge').textContent = logs.length + ' steps';
+  document.getElementById('logList').innerHTML = logs.map(l => `
+    <div class="log-item"><div class="log-dot"></div><span class="log-msg">${l}</span></div>`).join('');
+}
+
+function buildCatChart() {
+  const cd = DATA.cat_data;
+  if (!cd || !cd.labels || !cd.labels.length) {
+    document.getElementById('catChart').closest('.panel').querySelector('.chart-wrap').innerHTML =
+      '<div style="font-family:var(--mono);font-size:11px;color:var(--muted);padding:20px;text-align:center">No categorical column detected</div>';
+    return;
+  }
+  if (charts.cat) charts.cat.destroy();
+  charts.cat = new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels: cd.labels,
+      datasets: [{ label: 'Revenue', data: cd.values,
+        backgroundColor: cd.labels.map((_,i) => ['#00e5ff','#7c5cfc','#ff5c8a','#00e096','#ffd166','#f97316','#a78bfa','#60a5fa'][i%8] + '30'),
+        borderColor:     cd.labels.map((_,i) => ['#00e5ff','#7c5cfc','#ff5c8a','#00e096','#ffd166','#f97316','#a78bfa','#60a5fa'][i%8]),
+        borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: cOpts('Revenue by Category')
+  });
+}
+
+function buildML() {
+  const ml = DATA.ml;
+  if (!ml || ml.error) {
+    document.getElementById('mlContent').innerHTML = '<div style="font-family:var(--mono);font-size:11px;color:var(--muted)">Not enough numeric columns for ML</div>';
+    return;
+  }
+  document.getElementById('mlBadge').textContent = `✓ ${ml.model || 'Random Forest'}`;
+  const grow = ml.growth_pct || 0;
+  const growColor = grow >= 0 ? 'var(--green)' : 'var(--red)';
+
+  const rows = [
+    ['R² Score', ml.r2, 'var(--green)'],
+    ['Mean Abs Error', fmt(ml.mae), 'var(--yellow)'],
+    ['Current Avg', fmt(ml.current_avg), 'var(--muted2)'],
+    ['Next Prediction', fmt(ml.next_prediction), 'var(--accent)'],
+    ['Growth %', `${grow > 0 ? '+' : ''}${grow}%`, growColor],
+  ];
+
+  let html = rows.map(([label, val, color]) => `
+    <div class="ml-row">
+      <span class="ml-name">${label}</span>
+      <span class="ml-val" style="color:${color}">${val}</span>
+    </div>`).join('');
+
+  const fi = ml.feature_importance || {};
+  if (Object.keys(fi).length > 0) {
+    const max = Math.max(...Object.values(fi));
+    html += `<div style="margin-top:14px;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px">FEATURE IMPORTANCE</div>`;
+    html += Object.entries(fi).map(([feat, val]) => `
+      <div class="fi-item">
+        <div class="fi-lbl"><span>${feat}</span><span style="color:var(--accent)">${val}%</span></div>
+        <div class="fi-bg"><div class="fi-fill" style="width:${val/max*100}%"></div></div>
+      </div>`).join('');
+  }
+  document.getElementById('mlContent').innerHTML = html;
+}
+
+function buildStats() {
+  const st = DATA.stats || {};
+  document.getElementById('statsTbody').innerHTML = Object.entries(st).map(([col, s]) => `
+    <tr>
+      <td style="color:var(--text);font-weight:500">${col}</td>
+      <td>${fmt(s.min)}</td><td>${fmt(s.max)}</td>
+      <td style="color:var(--accent)">${fmt(s.mean)}</td>
+      <td style="color:var(--green)">${fmt(s.sum)}</td>
+    </tr>`).join('');
+}
+
+function buildPreview() {
+  page = 0; renderPreview();
+}
+
+function renderPreview() {
+  const rows = DATA.preview || [];
+  const cols = DATA.columns || [];
+  const total = Math.ceil(rows.length / PER);
+  const slice = rows.slice(page * PER, (page+1) * PER);
+  document.getElementById('previewBadge').textContent = `${rows.length} rows preview`;
+  document.getElementById('pgnInfo').textContent = `Page ${page+1} of ${total}`;
+  document.getElementById('previewWrap').innerHTML = `
+    <table>
+      <thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+      <tbody>${slice.map(r=>`<tr>${cols.map(c=>`<td>${r[c]??''}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>`;
+}
+
+function changePage(d) {
+  if (!DATA) return;
+  const total = Math.ceil((DATA.preview||[]).length / PER);
+  page = Math.max(0, Math.min(total-1, page+d));
+  renderPreview();
+}
+
+/* ── Utils ── */
+function fmt(v) {
+  if (v === null || v === undefined) return '—';
+  const n = parseFloat(v);
+  if (isNaN(n)) return v;
+  return Math.abs(n) >= 1000 ? n.toLocaleString(undefined,{maximumFractionDigits:0}) : n.toFixed(2);
+}
+
+function cOpts(title) {
+  return {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{ backgroundColor:'#0c101a', borderColor:'#1e2d45', borderWidth:1,
+        titleFont:{family:'JetBrains Mono',size:11}, bodyFont:{family:'JetBrains Mono',size:11},
+        titleColor:'#e8eaf0', bodyColor:'#94a3b8' }
+    },
+    scales:{
+      x:{ticks:{color:'#64748b',font:{family:'JetBrains Mono',size:9},maxRotation:30}, grid:{color:'#1e2d45'}},
+      y:{ticks:{color:'#64748b',font:{family:'JetBrains Mono',size:9}}, grid:{color:'#1e2d45'}}
+    }
+  };
+}
+</script>
+</body>
+</html>
