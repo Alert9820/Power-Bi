@@ -201,10 +201,13 @@ def generate_excel_report(df, filename, ml_result, logs):
         ("Columns", f"{len(df.columns)}", ACCENT2),
     ]
     if rev_col:
-        kpis.append(("Total Revenue", f"{df[rev_col].sum():,.0f}", GREEN))
-        kpis.append(("Avg Revenue", f"{df[rev_col].mean():,.0f}", YELLOW))
+        rev_series = pd.to_numeric(df[rev_col], errors='coerce').fillna(0)
+        kpis.append(("Total Revenue", f"{rev_series.sum():,.0f}", GREEN))
+        kpis.append(("Avg Revenue", f"{rev_series.mean():,.0f}", YELLOW))
     if cost_col and cost_col in df.columns:
-        profit = df[rev_col].sum() - df[cost_col].sum() if rev_col else 0
+        rev_series = pd.to_numeric(df[rev_col], errors='coerce').fillna(0) if rev_col else pd.Series([0])
+        cost_series = pd.to_numeric(df[cost_col], errors='coerce').fillna(0)
+        profit = float(rev_series.sum()) - float(cost_series.sum())
         kpis.append(("Net Profit", f"{profit:,.0f}", GREEN if profit > 0 else RED))
 
     kpi_cols = ['B', 'C', 'D', 'E', 'F', 'G']
@@ -485,8 +488,10 @@ def run_pipeline(file_bytes, filename):
 
     # Feature engineering
     if rev_col and cost_col and cost_col in df.columns:
-        df['Profit'] = pd.to_numeric(df[rev_col], errors='coerce') - pd.to_numeric(df[cost_col], errors='coerce')
-        df['Profit_Margin_%'] = (df['Profit'] / pd.to_numeric(df[rev_col], errors='coerce') * 100).round(2)
+        df[rev_col] = pd.to_numeric(df[rev_col], errors='coerce').fillna(0)
+        df[cost_col] = pd.to_numeric(df[cost_col], errors='coerce').fillna(0)
+        df['Profit'] = df[rev_col] - df[cost_col]
+        df['Profit_Margin_%'] = (df['Profit'] / df[rev_col].replace(0, float('nan')) * 100).round(2).fillna(0)
         logs.append("Engineered 'Profit' and 'Profit_Margin_%' columns")
 
     ml_result = run_ml_prediction(df, rev_col)
@@ -521,7 +526,8 @@ def run_pipeline(file_bytes, filename):
         'preview': preview,
         'report_path': str(report_path),
         'detected': {'revenue': rev_col, 'cost': cost_col, 'category': cat_col, 'date': date_col},
-    }
+}
+
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route('/')
